@@ -58,14 +58,28 @@ jobs:
           dnf install -y llvm-toolset clang-tools-extra
         shell: bash
 
+      # A non root user is required by the python toolchain
+      # This is only needed because this is a Docker container.
+      # See error message below:
+      # ERROR: no such package
+      # '@@rules_python~~python~python_3_11_x86_64-unknown-linux-gnu//':
+      # The current user is root, please run as non-root when using the
+      # hermetic Python interpreter.
+      # See https://github.com/bazelbuild/rules_python/pull/713.
+      - name: Create a non-root user
+        run: |
+          useradd -m test
+          chown -R test:test $GITHUB_WORKSPACE 
+        shell: bash
+
       - name: Install and init mise
         run: |
-          source .ci/mise/init.sh
+          runuser -u test -- bash -c "source .ci/mise/init.sh"
 
       - name: Install all versions
         run: |
-          .ci/mise/run.sh install
+          runuser -u test -- .ci/mise/run.sh install
 
       - name: Run Mise tests
         run: |
-          .ci/mise/run.sh ${{ inputs.arguments }}
+          runuser -u test -- .ci/mise/run.sh ${{ inputs.arguments }}
