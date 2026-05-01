@@ -36,10 +36,11 @@ COMPILE_COMMANDS_JSON: str = "{compile_commands_json}"
 COMPILE_COMMANDS_ABSOLUTE: str = f"{COMPILE_COMMANDS_JSON}.abs"
 CODECHECKER_ARGS: str = "{codechecker_args}"
 CONFIG_FILE: str = "{config_file}"
-DATA_DIR = sys.argv[1]
-FILE_PATH = sys.argv[2]
-LOG_FILE = sys.argv[3]
-ANALYZER_PLIST_PATHS = [item.split(",") for item in sys.argv[4].split(";")]
+CODECHECKER_BIN: str = sys.argv[1]
+DATA_DIR = sys.argv[2]
+FILE_PATH = sys.argv[3]
+LOG_FILE = sys.argv[4]
+ANALYZER_PLIST_PATHS = [item.split(",") for item in sys.argv[5].split(";")]
 
 
 def log(msg: str) -> None:
@@ -74,7 +75,7 @@ def _run_codechecker() -> None:
     Runs CodeChecker analyze
     """
     codechecker_cmd: list[str] = (
-        ["CodeChecker", "analyze"]
+        [CODECHECKER_BIN, "analyze"]
         + CODECHECKER_ARGS.split()
         + ["--output=" + DATA_DIR]  # type: ignore
         + ["--file=*/" + FILE_PATH]  # type: ignore
@@ -147,8 +148,8 @@ def main():
     """
     Main function of CodeChecker wrapper
     """
-    if len(sys.argv) != 5:
-        print("Wrong amount of arguments")
+    if len(sys.argv) != 6:
+        log("Wrong amount of arguments")
         sys.exit(1)
     _create_compile_commands_json_with_absolute_paths()
     _run_codechecker()

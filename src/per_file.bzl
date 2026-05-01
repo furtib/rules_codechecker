@@ -17,6 +17,10 @@ Rulesets for running codechecker in a different Bazel action
 for each translation unit.
 """
 
+load(
+    "@default_codechecker_tools//:defs.bzl",
+    "CODECHECKER_BIN_PATH",
+)
 load("codechecker_config.bzl", "get_config_file")
 load(
     "compile_commands.bzl",
@@ -68,6 +72,7 @@ def _run_code_checker(
         outputs = outputs,
         executable = ctx.outputs.per_file_script,
         arguments = [
+            ctx.attr.codechecker_bin,
             data_dir,
             src.path,
             codechecker_log.path,
@@ -202,6 +207,10 @@ def _per_file_impl(ctx):
 per_file_test = rule(
     implementation = _per_file_impl,
     attrs = {
+        "codechecker_bin": attr.string(
+            default = CODECHECKER_BIN_PATH,
+            doc = "Absolute path to the codechecker binary to be used.",
+        ),
         "config": attr.label(
             default = None,
             doc = "CodeChecker configuration",

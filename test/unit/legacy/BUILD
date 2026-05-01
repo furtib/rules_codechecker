@@ -134,6 +134,23 @@ codechecker_test(
     ],
 )
 
+codechecker_test(
+    name = "codechecker_pass_other",
+    codechecker_bin = "/home/efurtib/Documents/bazel_stuff/codechecker_bazel/venv/bin/CodeChecker",
+    targets = [
+        "test_pass",
+    ],
+)
+
+codechecker_test(
+    name = "code_checker_pass_other",
+    codechecker_bin = "/home/efurtib/Documents/bazel_stuff/codechecker_bazel/venv/bin/CodeChecker",
+    per_file = True,
+    targets = [
+        "test_pass",
+    ],
+)
+
 # This codechecker_test example supposed to fail showing findings report
 # Note "manual" tag (means should not be run with other tests)
 codechecker_test(

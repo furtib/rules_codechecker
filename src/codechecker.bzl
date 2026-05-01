@@ -106,7 +106,7 @@ def _codechecker_impl(ctx):
             "{Mode}": "Run",
             "{Verbosity}": "DEBUG",
             "{codechecker_analyze}": " ".join(ctx.attr.analyze),
-            "{codechecker_bin}": CODECHECKER_BIN_PATH,
+            "{codechecker_bin}": ctx.attr.codechecker_bin,
             "{codechecker_config}": config_file.path,
             "{codechecker_env}": codechecker_env,
             "{codechecker_files}": codechecker_files.path,
@@ -171,6 +171,10 @@ codechecker = rule(
         "analyze": attr.string_list(
             default = [],
             doc = "List of analyze command arguments, e.g.; --ctu.",
+        ),
+        "codechecker_bin": attr.string(
+            default = CODECHECKER_BIN_PATH,
+            doc = "Absolute path to the codechecker binary to be used.",
         ),
         "config": attr.label(
             default = None,
@@ -255,6 +259,10 @@ _codechecker_test = rule(
         "analyze": attr.string_list(
             default = [],
             doc = "List of analyze command arguments, e.g. --ctu",
+        ),
+        "codechecker_bin": attr.string(
+            default = CODECHECKER_BIN_PATH,
+            doc = "Absolute path to the codechecker binary to be used.",
         ),
         "config": attr.label(
             default = None,
