@@ -27,6 +27,10 @@ jobs:
     - name: Analysing the code with pylint
       run: pylint .
 
+    - name: Analyzing the code with Pylint
+      run: |
+        bazel test //:pylint_test --test_output=errors
+
     - name: Analyzing the code with Buildifier
       run: |
         bazel test //:format_test --test_output=errors
