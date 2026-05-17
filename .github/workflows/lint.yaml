@@ -29,10 +29,10 @@ jobs:
 
     - name: Analyzing the code with Pylint
       run: |
-        bazel test //:pylint_test --test_output=errors
+        bazel test //:pylint_test --test_output=all
 
     - name: Analyzing the code with Buildifier
       run: |
-        bazel test //:format_test --test_output=errors
+        bazel test //:format_test --test_output=all
 
     # TODO: Add more linters here

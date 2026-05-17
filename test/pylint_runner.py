@@ -18,8 +18,17 @@ using the provided python toolchain
 """
 
 import sys
+import os
 from pylint import lint
 
 if __name__ == "__main__":
+    srcdir = os.environ.get("TEST_SRCDIR", "")
+    if srcdir:
+        for root, dirs, files in os.walk(srcdir):
+            # limit depth to avoid noise
+            depth = root.replace(srcdir, "").count(os.sep)
+            if depth < 4:
+                print(root)
+
     args = sys.argv[1:]
     lint.Run(args)
