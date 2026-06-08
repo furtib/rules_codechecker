@@ -1,0 +1,15 @@
+name: Linters
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Which mode?
+      run: echo ${{ runner.debug == '1' && 'DEBUG' || 'WARNING' }}
+
+    - name: FAIL
+      run: |
+        exit 1
