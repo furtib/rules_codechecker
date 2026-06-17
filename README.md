@@ -52,7 +52,7 @@ Prerequisites
 We need the following tools:
 
 - Git 2 or newer
-- Bazel 7.7
+- Bazel 8.5
 - Clang and clang-tidy 21
 - Python 3.11 or newer
 - CodeChecker 6.27.3
@@ -61,7 +61,7 @@ If, by chance, Environment Modules (https://modules.sourceforge.net/)
 are available in your system, you can just add the following modules:
 
     module add git
-    module add bazel/7
+    module add bazel/8
     module add clang/21
     module add python/3.11
     module add codechecker/6.27.3

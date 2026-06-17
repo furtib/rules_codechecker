@@ -9,6 +9,6 @@ dependencies:
   - buildifier
   - clang=21
   - clang-tools=21
-  - bazel=7.7.1
+  - bazel=8.5.1
   - pip:
     - codechecker==6.27.3
