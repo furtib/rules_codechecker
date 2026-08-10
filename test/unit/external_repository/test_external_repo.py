@@ -109,11 +109,18 @@ class TestImplDepExternalDep(TestBase):
                 "-isystem bazel-out/k8-fastbuild/bin/external/"
                 "external_lib~/include"
             )
-        else:
+        elif self.BAZEL_VERSION.startswith("8"):  # type: ignore
             pattern1 = r"-isystem external/external_lib\+/include"
             pattern2 = (
                 r"-isystem "
                 r"bazel-out/k8-fastbuild/bin/external/external_lib\+/include"
+            )
+        else:
+            # Bazel 9+: without --features=external_include_paths,
+            # external deps use -I instead of -isystem
+            pattern1 = r"-Iexternal/external_lib\+/include"
+            pattern2 = (
+                r"-Ibazel-out/k8-fastbuild/bin/external/external_lib\+/include"
             )
 
         self.assertTrue(self.contains_regex_in_file(comp_json_file, pattern1))

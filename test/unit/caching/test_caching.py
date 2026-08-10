@@ -15,6 +15,8 @@
 """
 Functional test, to check if caching is working correctly
 """
+
+import re
 import tempfile
 import unittest
 import os
@@ -83,7 +85,12 @@ class TestCaching(TestBase):
         # Since everything in the monolithic rule is a single action,
         # we expect that action to rerun for any modified file.
         self.assertEqual(
-            stderr.count(f"SUBCOMMAND: # {target} [action 'CodeChecker"), 1
+            len(
+                re.findall(
+                    rf"SUBCOMMAND: #.*{target} \[action 'CodeChecker", stderr
+                )
+            ),
+            1,
         )
 
     def test_bazel_test_per_file_caching(self):
@@ -106,7 +113,12 @@ class TestCaching(TestBase):
         ret, _, stderr = self.run_command(f"bazel build {target} --subcommands")
         self.assertEqual(ret, 0, stderr)
         self.assertEqual(
-            stderr.count(f"SUBCOMMAND: # {target} [action 'CodeChecker"), 1
+            len(
+                re.findall(
+                    rf"SUBCOMMAND: #.*{target} \[action 'CodeChecker", stderr
+                )
+            ),
+            1,
         )
 
     def test_bazel_test_per_file_ctu_caching(self):
@@ -133,7 +145,12 @@ class TestCaching(TestBase):
         # We expect both files to be reanalyzed, since there is no caching
         # implemented for CTU analysis
         self.assertEqual(
-            stderr.count(f"SUBCOMMAND: # {target} [action 'CodeChecker"), 2
+            len(
+                re.findall(
+                    rf"SUBCOMMAND: #.*{target} \[action 'CodeChecker", stderr
+                )
+            ),
+            2,
         )
 
 
