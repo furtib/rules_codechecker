@@ -172,12 +172,6 @@ codechecker = rule(
             default = [],
             doc = "List of analyze command arguments, e.g.; --ctu.",
         ),
-        "codechecker_toolchain": attr.label(
-            default = None,
-            doc = "Optional codechecker_toolchain() target. " +
-                  "When set, tools from this target are used instead of " +
-                  "Bazel's toolchain resolution.",
-        ),
         "config": attr.label(
             default = None,
             doc = "CodeChecker configuration",
@@ -192,6 +186,12 @@ codechecker = rule(
                 compile_commands_aspect,
             ],
             doc = "List of compilable targets which should be checked.",
+        ),
+        "toolchain": attr.label(
+            default = None,
+            doc = "Optional toolchain() target. " +
+                  "When set, tools from this target are used instead of " +
+                  "Bazel's toolchain resolution.",
         ),
         "_codechecker_script": attr.label(
             allow_files = True,
@@ -283,12 +283,6 @@ _codechecker_test = rule(
             default = [],
             doc = "List of analyze command arguments, e.g. --ctu",
         ),
-        "codechecker_toolchain": attr.label(
-            default = None,
-            doc = "Optional codechecker_toolchain() target. " +
-                  "When set, tools from this target are used instead of " +
-                  "Bazel's toolchain resolution.",
-        ),
         "config": attr.label(
             default = None,
             cfg = platforms_transition,
@@ -313,6 +307,12 @@ _codechecker_test = rule(
             ],
             cfg = platforms_transition,
             doc = "List of compilable targets which should be checked.",
+        ),
+        "toolchain": attr.label(
+            default = None,
+            doc = "Optional toolchain() target. " +
+                  "When set, tools from this target are used instead of " +
+                  "Bazel's toolchain resolution.",
         ),
         "_codechecker_script": attr.label(
             allow_files = True,
@@ -350,7 +350,7 @@ def codechecker_test(
         analyze = [],
         tags = [],
         per_file = False,
-        codechecker_toolchain = None,
+        toolchain = None,
         **kwargs):
     """
     Macro to choose the appropriate codechecker rule
@@ -366,7 +366,7 @@ def codechecker_test(
         tags: Bazel tags
         per_file: Boolean value, toggles wether to run the analysis
                   with the experimental per_file rule.
-        codechecker_toolchain: Optional codechecker_toolchain() target.
+        toolchain: Optional toolchain() target.
                   When set, tools from this target are used instead of
                   Bazel's toolchain resolution.
         **kwargs: Other miscellaneous arguments.
@@ -383,7 +383,7 @@ def codechecker_test(
             options = analyze,
             skip = skip,
             config = config,
-            codechecker_toolchain = codechecker_toolchain,
+            toolchain = toolchain,
             tags = codechecker_tags,
             **kwargs
         )
@@ -396,7 +396,7 @@ def codechecker_test(
             skip = skip,
             config = config,
             analyze = analyze,
-            codechecker_toolchain = codechecker_toolchain,
+            toolchain = toolchain,
             tags = codechecker_tags,
             **kwargs
         )
