@@ -23,7 +23,6 @@ load(
 )
 load(
     "common.bzl",
-    "resolve_toolchain_info",
     "version_specific_attributes",
 )
 load(
@@ -93,7 +92,10 @@ def _codechecker_impl(ctx):
 
     config_file, codechecker_env = get_config_file(ctx)
 
-    info = resolve_toolchain_info(ctx)
+    if ctx.attr.toolchain:
+        info = ctx.attr.toolchain[platform_common.ToolchainInfo].codecheckerinfo
+    else:
+        info = ctx.toolchains["//:toolchain_type"].codecheckerinfo
 
     codechecker_files = ctx.actions.declare_directory(ctx.label.name + "/codechecker-files")
 
@@ -234,7 +236,10 @@ def _codechecker_test_impl(ctx):
     if not codechecker_files:
         fail("Execution results required for codechecker test are not available")
 
-    info = resolve_toolchain_info(ctx)
+    if ctx.attr.toolchain:
+        info = ctx.attr.toolchain[platform_common.ToolchainInfo].codecheckerinfo
+    else:
+        info = ctx.toolchains["//:toolchain_type"].codecheckerinfo
 
     # Create test script
     codechecker_test_script = ctx.actions.declare_file(ctx.label.name + "/codechecker_test_script")
