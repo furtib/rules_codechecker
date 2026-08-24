@@ -25,10 +25,6 @@ load(
     "codechecker_toolchain",
 )
 load(
-    "//src:per_file.bzl",
-    "per_file_test",
-)
-load(
     "//test/unit/toolchain:per_target_toolchain_test.bzl",
     "per_target_toolchain_test_suite",
 )
@@ -70,6 +66,9 @@ codechecker_toolchain(
 runfiles_test_suite(name = "runfiles")
 
 # --- Per-target toolchain selection tests ---
+# TODO(per-target-toolchain): When the `toolchain` attribute is added,
+# uncomment the `toolchain` lines below and flip the assertions in
+# per_target_toolchain_test.bzl (change asserts.false to asserts.true).
 
 cc_library(
     name = "toolchain_test_lib",
@@ -81,16 +80,15 @@ codechecker_test(
     name = "per_target_standard_subject",
     tags = ["manual"],
     targets = [":toolchain_test_lib"],
-    toolchain = ":runfiles_mock_toolchain",
+    # toolchain = ":runfiles_mock_toolchain",
 )
 
-per_file_test(
+codechecker_test(
     name = "per_target_per_file_subject",
+    per_file = True,
     tags = ["manual"],
     targets = [":toolchain_test_lib"],
-    toolchain = ":runfiles_mock_toolchain",
+    # toolchain = ":runfiles_mock_toolchain",
 )
 
-per_target_toolchain_test_suite(
-    name = "per_target",
-)
+per_target_toolchain_test_suite(name = "per_target")

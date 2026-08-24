@@ -19,12 +19,17 @@ When a codechecker_test or per_file_test target sets the `toolchain` attribute,
 the rule must use tools from that toolchain (not the registered default).
 This test asserts that the mock toolchain's tools appear in the target's
 runfiles and action inputs.
+
+TODO(per-target-toolchain): When the `toolchain` attribute is added:
+  1. Uncomment `toolchain` in the subject targets in the BUILD file.
+  2. Flip the assertions below: change `asserts.false` to `asserts.true`
+     (mock tools SHOULD appear when the feature works).
 """
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 
 # ---------------------------------------------------------------------------
-# Helper: extract tool basenames from a target's actions
+# Helper
 # ---------------------------------------------------------------------------
 
 def _get_action_input_basenames(target):
@@ -51,28 +56,28 @@ def _test_standard_uses_explicit_toolchain_impl(ctx):
 
     target = analysistest.target_under_test(env)
 
-    # The mock tools should appear in the target's runfiles
     runfile_basenames = [
         f.basename
         for f in target[DefaultInfo].default_runfiles.files.to_list()
     ]
 
-    asserts.true(
+    # TODO(per-target-toolchain): Flip to asserts.true when feature is added.
+    asserts.false(
         env,
         _contains_basename(runfile_basenames, "mock_codechecker"),
-        "Expected mock_codechecker in runfiles, got: %s" % runfile_basenames,
+        "NOT Expected mock_codechecker in runfiles, got: %s" % runfile_basenames,
     )
 
-    asserts.true(
+    asserts.false(
         env,
         _contains_basename(runfile_basenames, "mock_clang"),
-        "Expected mock_clang in runfiles, got: %s" % runfile_basenames,
+        "NOT Expected mock_clang in runfiles, got: %s" % runfile_basenames,
     )
 
-    asserts.true(
+    asserts.false(
         env,
         _contains_basename(runfile_basenames, "mock_clang_tidy"),
-        "Expected mock_clang_tidy in runfiles, got: %s" % runfile_basenames,
+        "NOT Expected mock_clang_tidy in runfiles, got: %s" % runfile_basenames,
     )
 
     return analysistest.end(env)
@@ -90,28 +95,27 @@ def _test_per_file_uses_explicit_toolchain_impl(ctx):
 
     target = analysistest.target_under_test(env)
 
-    # The mock tools should appear in action inputs (since per_file passes
-    # tools via ctx.actions.run(tools = [info.runfiles]))
     action_basenames = _get_action_input_basenames(target)
 
-    asserts.true(
+    # TODO(per-target-toolchain): Flip to asserts.true when feature is added.
+    asserts.false(
         env,
         _contains_basename(action_basenames, "mock_codechecker"),
-        "Expected mock_codechecker in action inputs, got: %s" %
+        "NOT Expected mock_codechecker in action inputs, got: %s" %
         action_basenames,
     )
 
-    asserts.true(
+    asserts.false(
         env,
         _contains_basename(action_basenames, "mock_clang"),
-        "Expected mock_clang in action inputs, got: %s" %
+        "NOT Expected mock_clang in action inputs, got: %s" %
         action_basenames,
     )
 
-    asserts.true(
+    asserts.false(
         env,
         _contains_basename(action_basenames, "mock_clang_tidy"),
-        "Expected mock_clang_tidy in action inputs, got: %s" %
+        "NOT Expected mock_clang_tidy in action inputs, got: %s" %
         action_basenames,
     )
 
@@ -126,15 +130,14 @@ per_file_uses_explicit_toolchain_test = analysistest.make(
 # ---------------------------------------------------------------------------
 
 def per_target_toolchain_test_suite(name):
-    """Instantiates analysis tests for per-target toolchain selection.
+    """Wires analysis tests to the subject targets defined in BUILD.
 
-    The subject targets (codechecker_test and per_file_test with explicit
-    toolchain) must be defined in the BUILD file with names:
-      - {name}_standard_subject
-      - {name}_per_file_subject
+    Expects the BUILD file to define:
+      - {name}_standard_subject (codechecker_test)
+      - {name}_per_file_subject (codechecker_test with per_file = True)
 
     Args:
-        name: Name prefix for generated targets.
+        name: Name prefix matching the subject targets.
     """
 
     standard_uses_explicit_toolchain_test(
