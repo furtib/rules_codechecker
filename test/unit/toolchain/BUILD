@@ -111,7 +111,12 @@ codechecker_test(
     toolchain = ":runfiles_mock_toolchain",
 )
 
-per_target_toolchain_test_suite(name = "per_target")
+per_target_toolchain_test_suite(
+    name = "per_target",
+    expected_clang = "mock_clang",
+    expected_clang_tidy = "mock_clang_tidy",
+    expected_codechecker = "mock_codechecker",
+)
 
 codechecker_test(
     name = "per_target_2_monolithic_subject",
@@ -128,4 +133,9 @@ codechecker_test(
     toolchain = ":runfiles_mock_toolchain_2",
 )
 
-per_target_toolchain_test_suite(name = "per_target_2")
+per_target_toolchain_test_suite(
+    name = "per_target_2",
+    expected_clang = "mock_clang_2",
+    expected_clang_tidy = "mock_clang_tidy_2",
+    expected_codechecker = "mock_codechecker_2",
+)
