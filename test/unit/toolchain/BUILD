@@ -13,8 +13,24 @@
 # limitations under the License.
 
 load(
+    "@rules_cc//cc:defs.bzl",
+    "cc_library",
+)
+load(
+    "//:defs.bzl",
+    "codechecker_test",
+)
+load(
     "//src:codechecker_toolchain.bzl",
     "codechecker_toolchain",
+)
+load(
+    "//src:per_file.bzl",
+    "per_file_test",
+)
+load(
+    "//test/unit/toolchain:per_target_toolchain_test.bzl",
+    "per_target_toolchain_test_suite",
 )
 load(
     "//test/unit/toolchain:toolchain_runfiles_test.bzl",
@@ -52,3 +68,29 @@ codechecker_toolchain(
 # --- Tests ---
 
 runfiles_test_suite(name = "runfiles")
+
+# --- Per-target toolchain selection tests ---
+
+cc_library(
+    name = "toolchain_test_lib",
+    srcs = ["toolchain_test.cpp"],
+    tags = ["manual"],
+)
+
+codechecker_test(
+    name = "per_target_standard_subject",
+    tags = ["manual"],
+    targets = [":toolchain_test_lib"],
+    toolchain = ":runfiles_mock_toolchain",
+)
+
+per_file_test(
+    name = "per_target_per_file_subject",
+    tags = ["manual"],
+    targets = [":toolchain_test_lib"],
+    toolchain = ":runfiles_mock_toolchain",
+)
+
+per_target_toolchain_test_suite(
+    name = "per_target",
+)
