@@ -89,9 +89,6 @@ codechecker_toolchain(
 runfiles_test_suite(name = "runfiles")
 
 # --- Per-target toolchain selection tests ---
-# TODO(per-target-toolchain): When the `toolchain` attribute is added,
-# uncomment the `toolchain` lines below and flip the assertions in
-# per_target_toolchain_test.bzl (change asserts.false to asserts.true).
 
 cc_library(
     name = "toolchain_test_lib",
@@ -103,7 +100,7 @@ codechecker_test(
     name = "per_target_monolithic_subject",
     tags = ["manual"],
     targets = [":toolchain_test_lib"],
-    # toolchain = ":runfiles_mock_toolchain",
+    toolchain = ":runfiles_mock_toolchain",
 )
 
 codechecker_test(
@@ -111,7 +108,7 @@ codechecker_test(
     per_file = True,
     tags = ["manual"],
     targets = [":toolchain_test_lib"],
-    # toolchain = ":runfiles_mock_toolchain",
+    toolchain = ":runfiles_mock_toolchain",
 )
 
 per_target_toolchain_test_suite(name = "per_target")
@@ -120,7 +117,7 @@ codechecker_test(
     name = "per_target_2_monolithic_subject",
     tags = ["manual"],
     targets = [":toolchain_test_lib"],
-    # toolchain = ":runfiles_mock_toolchain_2",
+    toolchain = ":runfiles_mock_toolchain_2",
 )
 
 codechecker_test(
@@ -128,7 +125,7 @@ codechecker_test(
     per_file = True,
     tags = ["manual"],
     targets = [":toolchain_test_lib"],
-    # toolchain = ":runfiles_mock_toolchain_2",
+    toolchain = ":runfiles_mock_toolchain_2",
 )
 
 per_target_toolchain_test_suite(name = "per_target_2")

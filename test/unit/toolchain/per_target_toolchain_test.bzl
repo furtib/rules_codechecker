@@ -19,11 +19,6 @@ When a codechecker_test or per_file_test target sets the `toolchain` attribute,
 the rule must use tools from that toolchain (not the registered default).
 This test asserts that the mock toolchain's tools appear in the target's
 runfiles and action inputs.
-
-TODO(per-target-toolchain): When the `toolchain` attribute is added:
-  1. Uncomment `toolchain` in the subject targets in the BUILD file.
-  2. Flip the assertions below: change `asserts.false` to `asserts.true`
-     (mock tools SHOULD appear when the feature works).
 """
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
@@ -61,23 +56,22 @@ def _test_monolithic_uses_explicit_toolchain_impl(ctx):
         for f in target[DefaultInfo].default_runfiles.files.to_list()
     ]
 
-    # TODO(per-target-toolchain): Flip to asserts.true when feature is added.
-    asserts.false(
+    asserts.true(
         env,
         _contains_basename(runfile_basenames, "mock_codechecker"),
-        "NOT Expected mock_codechecker in runfiles, got: %s" % runfile_basenames,
+        "Expected mock_codechecker in runfiles, got: %s" % runfile_basenames,
     )
 
-    asserts.false(
+    asserts.true(
         env,
         _contains_basename(runfile_basenames, "mock_clang"),
-        "NOT Expected mock_clang in runfiles, got: %s" % runfile_basenames,
+        "Expected mock_clang in runfiles, got: %s" % runfile_basenames,
     )
 
-    asserts.false(
+    asserts.true(
         env,
         _contains_basename(runfile_basenames, "mock_clang_tidy"),
-        "NOT Expected mock_clang_tidy in runfiles, got: %s" % runfile_basenames,
+        "Expected mock_clang_tidy in runfiles, got: %s" % runfile_basenames,
     )
 
     return analysistest.end(env)
@@ -97,25 +91,24 @@ def _test_per_file_uses_explicit_toolchain_impl(ctx):
 
     action_basenames = _get_action_input_basenames(target)
 
-    # TODO(per-target-toolchain): Flip to asserts.true when feature is added.
-    asserts.false(
+    asserts.true(
         env,
         _contains_basename(action_basenames, "mock_codechecker"),
-        "NOT Expected mock_codechecker in action inputs, got: %s" %
+        "Expected mock_codechecker in action inputs, got: %s" %
         action_basenames,
     )
 
-    asserts.false(
+    asserts.true(
         env,
         _contains_basename(action_basenames, "mock_clang"),
-        "NOT Expected mock_clang in action inputs, got: %s" %
+        "Expected mock_clang in action inputs, got: %s" %
         action_basenames,
     )
 
-    asserts.false(
+    asserts.true(
         env,
         _contains_basename(action_basenames, "mock_clang_tidy"),
-        "NOT Expected mock_clang_tidy in action inputs, got: %s" %
+        "Expected mock_clang_tidy in action inputs, got: %s" %
         action_basenames,
     )
 
