@@ -77,7 +77,7 @@ cc_library(
 )
 
 codechecker_test(
-    name = "per_target_standard_subject",
+    name = "per_target_monolithic_subject",
     tags = ["manual"],
     targets = [":toolchain_test_lib"],
     # toolchain = ":runfiles_mock_toolchain",

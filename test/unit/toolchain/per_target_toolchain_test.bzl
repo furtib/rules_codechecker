@@ -48,10 +48,10 @@ def _contains_basename(basenames, name):
     return False
 
 # ---------------------------------------------------------------------------
-# Test: codechecker_test (standard) uses explicit toolchain tools
+# Test: codechecker_test (monolithic) uses explicit toolchain tools
 # ---------------------------------------------------------------------------
 
-def _test_standard_uses_explicit_toolchain_impl(ctx):
+def _test_monolithic_uses_explicit_toolchain_impl(ctx):
     env = analysistest.begin(ctx)
 
     target = analysistest.target_under_test(env)
@@ -82,8 +82,8 @@ def _test_standard_uses_explicit_toolchain_impl(ctx):
 
     return analysistest.end(env)
 
-standard_uses_explicit_toolchain_test = analysistest.make(
-    _test_standard_uses_explicit_toolchain_impl,
+monolithic_uses_explicit_toolchain_test = analysistest.make(
+    _test_monolithic_uses_explicit_toolchain_impl,
 )
 
 # ---------------------------------------------------------------------------
@@ -133,16 +133,16 @@ def per_target_toolchain_test_suite(name):
     """Wires analysis tests to the subject targets defined in BUILD.
 
     Expects the BUILD file to define:
-      - {name}_standard_subject (codechecker_test)
+      - {name}_monolithic_subject (codechecker_test)
       - {name}_per_file_subject (codechecker_test with per_file = True)
 
     Args:
         name: Name prefix matching the subject targets.
     """
 
-    standard_uses_explicit_toolchain_test(
-        name = name + "_standard_test",
-        target_under_test = name + "_standard_subject",
+    monolithic_uses_explicit_toolchain_test(
+        name = name + "_monolithic_test",
+        target_under_test = name + "_monolithic_subject",
     )
 
     per_file_uses_explicit_toolchain_test(
@@ -153,7 +153,7 @@ def per_target_toolchain_test_suite(name):
     native.test_suite(
         name = name,
         tests = [
-            name + "_standard_test",
+            name + "_monolithic_test",
             name + "_per_file_test",
         ],
     )
