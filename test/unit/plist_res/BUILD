@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Setup module paths for testing directly on `codechecker_script.py`
-"""
+load("@rules_python//python:py_test.bzl", "py_test")
 
-import os
-import sys
-
-# Allow relative imports within the test project to work as expected
-# Without it we wouldn't be able to include the fix_bazel_paths function
-src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", '..')
-sys.path.append(src)
+py_test(
+    name = "path_resolution_test",
+    size = "small",
+    srcs = ["path_resolution_test.py"],
+    main = "path_resolution_test.py",
+    tags = ["unit"],
+    deps = ["//src:codechecker_script"],
+)
