@@ -16,33 +16,100 @@
 Codechecker wrapper script for per-file analysis
 """
 
+import argparse
+from dataclasses import dataclass
 import os
 import re
 import shutil
 import subprocess
 import sys
 
-COMPILE_COMMANDS_JSON: str = sys.argv[2]
-COMPILE_COMMANDS_ABSOLUTE: str = f"{COMPILE_COMMANDS_JSON}.abs"
-CODECHECKER_ARGS: str = sys.argv[3]
-CONFIG_FILE: str = sys.argv[4]
-SKIP_FILE: str = sys.argv[8]
-CODECHECKER_BIN = os.path.realpath(sys.argv[1])
-# The output directory for CodeChecker
-DATA_DIR = sys.argv[5]
-# The file to be analyzed
-FILE_PATH = sys.argv[6]
-LOG_FILE = sys.argv[7]
-METADATA_FILE = sys.argv[9]
-# List of pairs of analyzers and their plist files
-ANALYZER_PLIST_PATHS = [item.split(",") for item in sys.argv[10].split(";")]
-ANALYZER_EXECUTABLES_ENV_VAR = ";".join(
-    f"{name}:{os.path.realpath(path)}"
-    for name, path in [
-        pair.split(":", 1) for pair in sys.argv[11].split(";") if pair
-    ]
-)
 
+@dataclass
+class Config:  # pylint: disable=too-many-instance-attributes
+    """Configuration parsed from command-line arguments."""
+
+    codechecker_bin: str
+    compile_commands: str
+    codechecker_args: str
+    config_file: str
+    data_dir: str
+    file_path: str
+    log_file: str
+    skip_file: str
+    metadata_file: str
+    analyzer_plist_paths: list
+    analyzer_executables_env_var: str
+
+
+def parse_args(argv=None):
+    """Parse command-line arguments and return a Config instance."""
+    parser = argparse.ArgumentParser(
+        description="CodeChecker per-file analysis wrapper"
+    )
+
+    parser.add_argument(
+        "--codechecker", required=True, help="Path to CodeChecker binary"
+    )
+    parser.add_argument(
+        "--commands", required=True, help="Path to compile_commands.json"
+    )
+    parser.add_argument(
+        "--analyze", default="", help="CodeChecker analyze arguments"
+    )
+    parser.add_argument("--config", required=True, help="Path to config file")
+    parser.add_argument(
+        "--data_dir", required=True, help="Output directory for CodeChecker"
+    )
+    parser.add_argument(
+        "--file", required=True, help="Path to the file to be analyzed"
+    )
+    parser.add_argument("--log", required=True, help="Path to the log file")
+    parser.add_argument("--skip", required=True, help="Path to the skip file")
+    parser.add_argument(
+        "--metadata", required=True, help="Path to the metadata file"
+    )
+    parser.add_argument(
+        "--analyzer_plists",
+        required=True,
+        help="Semicolon-separated list of analyzer,plist_path pairs",
+    )
+    parser.add_argument(
+        "--analyzer_executables",
+        default="",
+        help="Semicolon-separated list of name:path pairs",
+    )
+
+    args = parser.parse_args(argv)
+
+    analyzer_plist_paths = [
+        item.split(",") for item in args.analyzer_plists.split(";")
+    ]
+    analyzer_executables_env_var = ";".join(
+        f"{name}:{os.path.realpath(path)}"
+        for name, path in [
+            pair.split(":", 1)
+            for pair in args.analyzer_executables.split(";")
+            if pair
+        ]
+    )
+
+    return Config(
+        codechecker_bin=os.path.realpath(args.codechecker),
+        compile_commands=args.commands,
+        codechecker_args=args.analyze,
+        config_file=args.config,
+        data_dir=args.data_dir,
+        file_path=args.file,
+        log_file=args.log,
+        skip_file=args.skip,
+        metadata_file=args.metadata,
+        analyzer_plist_paths=analyzer_plist_paths,
+        analyzer_executables_env_var=analyzer_executables_env_var,
+    )
+
+
+COMPILE_COMMANDS_ABSOLUTE_SUFFIX = ".abs"
 
 EMPTY_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -61,24 +128,29 @@ EMPTY_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 
-def log(msg: str) -> None:
+def log(cfg: Config, msg: str) -> None:
     """
     Append message to the log file
     """
-    with open(LOG_FILE, "a", encoding="utf-8") as log_file:
+    with open(cfg.log_file, "a", encoding="utf-8") as log_file:
         log_file.write(msg)
 
 
-def _create_compile_commands_json_with_absolute_paths():
+def _compile_commands_absolute_path(cfg: Config) -> str:
+    """Return the path for the absolute-paths version of
+    compile_commands.json."""
+    return cfg.compile_commands + COMPILE_COMMANDS_ABSOLUTE_SUFFIX
+
+
+def _create_compile_commands_json_with_absolute_paths(cfg: Config):
     """
     Modifies the paths in compile_commands.json to contain the absolute path
     of the files.
     """
+    absolute_path = _compile_commands_absolute_path(cfg)
     with open(
-        COMPILE_COMMANDS_JSON, "r", encoding="utf-8"
-    ) as original_file, open(
-        COMPILE_COMMANDS_ABSOLUTE, "w", encoding="utf-8"
-    ) as new_file:
+        cfg.compile_commands, "r", encoding="utf-8"
+    ) as original_file, open(absolute_path, "w", encoding="utf-8") as new_file:
         content = original_file.read()
         # Replace "directory":"." with the absolute path
         # of the current working directory
@@ -88,7 +160,7 @@ def _create_compile_commands_json_with_absolute_paths():
         new_file.write(new_content)
 
 
-def _get_codechecker_env() -> dict[str, str]:
+def _get_codechecker_env(cfg: Config) -> dict[str, str]:
     """
     Returns the environment for running CodeChecker
     """
@@ -97,66 +169,67 @@ def _get_codechecker_env() -> dict[str, str]:
     if "PATH" not in cc_env:
         cc_env["PATH"] = "/bin"
     # Overwrite analyzer paths
-    cc_env["CC_ANALYZER_BIN"] = ANALYZER_EXECUTABLES_ENV_VAR
+    cc_env["CC_ANALYZER_BIN"] = cfg.analyzer_executables_env_var
     return cc_env
 
 
-def _run_codechecker() -> None:
+def _run_codechecker(cfg: Config) -> None:
     """
     Runs CodeChecker analyze
     """
+    absolute_path = _compile_commands_absolute_path(cfg)
     codechecker_cmd: list[str] = (
-        [CODECHECKER_BIN, "analyze"]
-        + CODECHECKER_ARGS.split()
-        + ["--output=" + DATA_DIR]
-        + ["--file=*/" + FILE_PATH]
-        + ["--skip", SKIP_FILE]
-        + ["--config", CONFIG_FILE]
-        + [COMPILE_COMMANDS_ABSOLUTE]
+        [cfg.codechecker_bin, "analyze"]
+        + cfg.codechecker_args.split()
+        + ["--output=" + cfg.data_dir]
+        + ["--file=*/" + cfg.file_path]
+        + ["--skip", cfg.skip_file]
+        + ["--config", cfg.config_file]
+        + [absolute_path]
     )
-    log(f"CodeChecker command: {' '.join(codechecker_cmd)}\n")
-    log("===-----------------------------------------------------===\n")
-    log("                   CodeChecker error log                   \n")
-    log("===-----------------------------------------------------===\n")
+    log(cfg, f"CodeChecker command: {' '.join(codechecker_cmd)}\n")
+    log(cfg, "===---------------------------------------------===\n")
+    log(cfg, "               CodeChecker error log               \n")
+    log(cfg, "===---------------------------------------------===\n")
 
     result = subprocess.run(
         ["echo", "$PATH"],
         shell=True,
-        env=_get_codechecker_env(),
+        env=_get_codechecker_env(cfg),
         capture_output=True,
         text=True,
         check=False,
     )
-    log(result.stdout)
+    log(cfg, result.stdout)
 
     try:
-        with open(LOG_FILE, "a", encoding="utf-8") as log_file:
+        with open(cfg.log_file, "a", encoding="utf-8") as log_file:
             subprocess.run(
                 codechecker_cmd,
-                env=_get_codechecker_env(),
+                env=_get_codechecker_env(cfg),
                 stdout=log_file,
                 stderr=log_file,
                 check=True,
             )
     except subprocess.CalledProcessError as e:
-        log(e.output.decode() if e.output else "")
+        log(cfg, e.output.decode() if e.output else "")
         if e.returncode == 1 or e.returncode >= 128:
-            _display_error(e.returncode)
+            _display_error(cfg, e.returncode)
 
 
-def _display_error(ret_code: int) -> None:
+def _display_error(cfg: Config, ret_code: int) -> None:
     """
     Display the log file, and exit with 1
     """
     # Log and exit on error
     print("===-----------------------------------------------------===")
     print(f"[ERROR]: CodeChecker returned with {ret_code}!")
-    with open(LOG_FILE, "r", encoding="utf-8") as log_file:
+    with open(cfg.log_file, "r", encoding="utf-8") as log_file:
         print(log_file.read())
     sys.exit(1)
 
 
-def _move_output_files():
+def _move_output_files(cfg: Config):
     """
     Move output files from the temporary directory to their final destination
     If a file doesn't exists, write an empty output file to the target.
@@ -168,7 +241,7 @@ def _move_output_files():
     # Copy the plist files to the specified destinations
     destination_and_source_pattern_pairs = [
         (analyzer[1], re.compile(rf"_{analyzer[0]}_.*\.plist$"))
-        for analyzer in ANALYZER_PLIST_PATHS
+        for analyzer in cfg.analyzer_plist_paths
     ]
 
     plist_exists: bool = False
@@ -177,12 +250,13 @@ def _move_output_files():
         destination_plist_path,
         source_plist_search_pattern,
     ) in destination_and_source_pattern_pairs:
-        for file_path in os.listdir(DATA_DIR):
-            if not os.path.isfile(os.path.join(DATA_DIR, file_path)):
+        for file_path in os.listdir(cfg.data_dir):
+            if not os.path.isfile(os.path.join(cfg.data_dir, file_path)):
                 continue
             if source_plist_search_pattern.search(file_path):
                 shutil.move(
-                    os.path.join(DATA_DIR, file_path), destination_plist_path
+                    os.path.join(cfg.data_dir, file_path),
+                    destination_plist_path,
                 )
                 plist_exists = True
                 break
@@ -200,17 +274,21 @@ def _move_output_files():
     # metadata files into a single one, but for now, we create a unique
     # metadata file name before copying it over.
 
-    if os.path.isfile(os.path.join(DATA_DIR, "metadata.json")):
-        shutil.move(os.path.join(DATA_DIR, "metadata.json"), METADATA_FILE)
+    if os.path.isfile(os.path.join(cfg.data_dir, "metadata.json")):
+        shutil.move(
+            os.path.join(cfg.data_dir, "metadata.json"),
+            cfg.metadata_file,
+        )
     elif plist_exists:
         raise RuntimeError(
-            "[ERROR] metadata.json doesn't exist despite successful analysis."
+            "[ERROR] metadata.json doesn't exist despite "
+            "successful analysis."
         )
     # This happens when the file was skipped.
     # CodeChecker does not create metadata
     # if no analysis was performed.
     else:
-        with open(METADATA_FILE, "w", encoding="utf-8") as file:
+        with open(cfg.metadata_file, "w", encoding="utf-8") as file:
             file.write("{}")
 
 
@@ -218,20 +296,11 @@ def main():
     """
     Main function of CodeChecker wrapper
     """
-    if len(sys.argv) != 12:
-        print("Wrong amount of arguments")
-        sys.exit(1)
-    _create_compile_commands_json_with_absolute_paths()
-    _run_codechecker()
-    _move_output_files()
+    cfg = parse_args()
+    _create_compile_commands_json_with_absolute_paths(cfg)
+    _run_codechecker(cfg)
+    _move_output_files(cfg)
 
 
 if __name__ == "__main__":
     main()
-
-
-# I have conserved this comment from the original bash script
-# The sed commands are commented out, so we won't implement them
-# sed -i -e "s|<string>.*execroot/bazel_codechecker/|<string>|g" \
-# $CLANG_TIDY_PLIST
-# sed -i -e "s|<string>.*execroot/bazel_codechecker/|<string>|g" $CLANGSA_PLIST
