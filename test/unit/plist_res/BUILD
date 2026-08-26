@@ -17,8 +17,8 @@ load("@rules_python//python:py_test.bzl", "py_test")
 py_test(
     name = "path_resolution_test",
     size = "small",
-    srcs = ["path_resolution_test.py"],
-    main = "path_resolution_test.py",
+    srcs = ["path_resolution_check.py"],
+    main = "path_resolution_check.py",
     tags = ["unit"],
     deps = ["//src:codechecker_script"],
 )
