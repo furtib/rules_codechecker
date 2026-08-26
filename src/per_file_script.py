@@ -17,18 +17,23 @@ Codechecker wrapper script for per-file analysis
 """
 
 import argparse
-from dataclasses import dataclass
 import os
 import re
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
+import logging
+from common import check_results, fail, log_file_name, parse
 
 
 @dataclass
 class Config:  # pylint: disable=too-many-instance-attributes
     """Configuration parsed from command-line arguments."""
 
+    execution_mode: str
+    verbosity: str
+    severities: str
     codechecker_bin: str
     compile_commands: str
     codechecker_args: str
@@ -48,30 +53,35 @@ def parse_args(argv=None):
         description="CodeChecker per-file analysis wrapper"
     )
 
+    parser.add_argument("--mode", required=True, help="Execution mode")
+    parser.add_argument("--verbosity", default="INFO", help="Log level")
     parser.add_argument(
-        "--codechecker", required=True, help="Path to CodeChecker binary"
+        "--codechecker", required=False, help="Path to CodeChecker binary"
     )
     parser.add_argument(
-        "--commands", required=True, help="Path to compile_commands.json"
+        "--commands", required=False, help="Path to compile_commands.json"
     )
     parser.add_argument(
         "--analyze", default="", help="CodeChecker analyze arguments"
     )
-    parser.add_argument("--config", required=True, help="Path to config file")
+    parser.add_argument("--config", required=False, help="Path to config file")
     parser.add_argument(
         "--data_dir", required=True, help="Output directory for CodeChecker"
     )
     parser.add_argument(
-        "--file", required=True, help="Path to the file to be analyzed"
+        "--file", required=False, help="Path to the file to be analyzed"
     )
-    parser.add_argument("--log", required=True, help="Path to the log file")
-    parser.add_argument("--skip", required=True, help="Path to the skip file")
     parser.add_argument(
-        "--metadata", required=True, help="Path to the metadata file"
+        "--severities", required=False, help="Severities to check"
+    )
+    parser.add_argument("--log", required=False, help="Path to the log file")
+    parser.add_argument("--skip", required=False, help="Path to the skip file")
+    parser.add_argument(
+        "--metadata", required=False, help="Path to the metadata file"
     )
     parser.add_argument(
         "--analyzer_plists",
-        required=True,
+        required=False,
         help="Semicolon-separated list of analyzer,plist_path pairs",
     )
     parser.add_argument(
@@ -82,20 +92,27 @@ def parse_args(argv=None):
 
     args = parser.parse_args(argv)
 
-    analyzer_plist_paths = [
-        item.split(",") for item in args.analyzer_plists.split(";")
-    ]
-    analyzer_executables_env_var = ";".join(
-        f"{name}:{os.path.realpath(path)}"
-        for name, path in [
-            pair.split(":", 1)
-            for pair in args.analyzer_executables.split(";")
-            if pair
+    analyzer_plist_paths = []
+    if args.analyzer_plists:
+        analyzer_plist_paths = [
+            item.split(",") for item in args.analyzer_plists.split(";")
         ]
-    )
+    analyzer_executables_env_var = ""
+    if args.analyzer_executables:
+        analyzer_executables_env_var = ";".join(
+            f"{name}:{os.path.realpath(path)}"
+            for name, path in [
+                pair.split(":", 1)
+                for pair in args.analyzer_executables.split(";")
+                if pair
+            ]
+        )
 
     return Config(
-        codechecker_bin=os.path.realpath(args.codechecker),
+        execution_mode=args.mode,
+        verbosity=args.verbosity,
+        severities=args.severities,
+        codechecker_bin=os.path.realpath(args.codechecker or "/"),
         compile_commands=args.commands,
         codechecker_args=args.analyze,
         config_file=args.config,
@@ -292,15 +309,54 @@ def _move_output_files(cfg: Config):
             file.write("{}")
 
 
+def setup(verbosity, log):
+    """Setup logging parameters for execution session"""
+    if verbosity == "INFO":
+        log_level = logging.INFO
+    elif verbosity == "WARN":
+        log_level = logging.WARN
+    else:
+        log_level = logging.DEBUG
+    log_format = "[codechecker] %(levelname)5s: %(message)s"
+
+    if log_file_name(log):
+        logging.basicConfig(
+            filename=log_file_name(log),
+            level=log_level,
+            format=log_format,
+        )
+    else:
+        logging.basicConfig(level=log_level, format=log_format)
+
+
 def main():
     """
     Main function of CodeChecker wrapper
     """
     cfg = parse_args()
-    _create_compile_commands_json_with_absolute_paths(cfg)
-    _run_codechecker(cfg)
-    _move_output_files(cfg)
+    setup(cfg.verbosity, cfg.log_file)
+    if cfg.execution_mode == "Run":
+        _create_compile_commands_json_with_absolute_paths(cfg)
+        _run_codechecker(cfg)
+        _move_output_files(cfg)
+    elif cfg.execution_mode == "Parse":
+        open(cfg.log_file, "a", encoding="utf-8").close()
+        parse(cfg.codechecker_bin, cfg.config_file, cfg.data_dir + "/../data", cfg.data_dir, cfg.log_file)
+    elif cfg.execution_mode == "Test":
+        check_results(cfg.data_dir, cfg.log_file, cfg.severities)
+    else:
+        fail(
+            cfg.log_file,
+            f"Wrong codechecker script mode: {cfg.execution_mode}",
+        )
 
 
 if __name__ == "__main__":
     main()
+
+
+# I have conserved this comment from the original bash script
+# The sed commands are commented out, so we won't implement them
+# sed -i -e "s|<string>.*execroot/bazel_codechecker/|<string>|g" \
+# $CLANG_TIDY_PLIST
+# sed -i -e "s|<string>.*execroot/bazel_codechecker/|<string>|g" $CLANGSA_PLIST
