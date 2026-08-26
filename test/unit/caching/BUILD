@@ -12,61 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# cc_binary for simple C++ tests
 load(
-    "@rules_cc//cc:defs.bzl",
-    "cc_binary",
-    "cc_library",
-)
-load(
-    "//:defs.bzl",
-    "codechecker_test",
+    "//test/unit/caching:caching_test.bzl",
+    "caching_test",
 )
 
 # We are not interested in finding bugs, we are only interested in whether the
 # analysis re-runs after the files have been modified. As such, these files emit no
 # warnings.
 
-cc_library(
-    name = "linking",
-    hdrs = ["linking.h"],
+exports_files(["caching_check.py"])
+
+# Bazel-native caching tests (bazel inside bazel)
+caching_test(
+    name = "caching_monolithic_test",
+    expected_action_count = 1,
+    file_to_modify = "secondary.cc",
+    target_name = "codechecker_caching",
 )
 
-cc_library(
-    name = "secondary",
-    srcs = ["secondary.cc"],
-    deps = ["linking"],
+caching_test(
+    name = "caching_per_file_test",
+    expected_action_count = 1,
+    file_to_modify = "secondary.cc",
+    target_name = "per_file_caching",
 )
 
-cc_binary(
-    name = "primary",
-    srcs = ["primary.cc"],
-    deps = [
-        "linking",
-        "secondary",
-    ],
-)
-
-codechecker_test(
-    name = "codechecker_caching",
-    targets = [
-        "primary",
-    ],
-)
-
-codechecker_test(
-    name = "per_file_caching",
-    per_file = True,
-    targets = [
-        "primary",
-    ],
-)
-
-codechecker_test(
-    name = "per_file_caching_ctu",
-    analyze = ["--ctu"],
-    per_file = True,
-    targets = [
-        "primary",
-    ],
+caching_test(
+    name = "caching_per_file_ctu_test",
+    expected_action_count = 2,
+    file_to_modify = "secondary.cc",
+    target_name = "per_file_caching_ctu",
 )
