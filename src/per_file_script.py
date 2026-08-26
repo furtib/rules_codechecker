@@ -23,8 +23,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
-import logging
-from common import check_results, fail, log_file_name, parse
+from common import check_results, fail, log_file_name, parse, setup_logging
 
 
 @dataclass
@@ -309,32 +308,12 @@ def _move_output_files(cfg: Config):
             file.write("{}")
 
 
-def setup(verbosity, log):
-    """Setup logging parameters for execution session"""
-    if verbosity == "INFO":
-        log_level = logging.INFO
-    elif verbosity == "WARN":
-        log_level = logging.WARN
-    else:
-        log_level = logging.DEBUG
-    log_format = "[codechecker] %(levelname)5s: %(message)s"
-
-    if log_file_name(log):
-        logging.basicConfig(
-            filename=log_file_name(log),
-            level=log_level,
-            format=log_format,
-        )
-    else:
-        logging.basicConfig(level=log_level, format=log_format)
-
-
 def main():
     """
     Main function of CodeChecker wrapper
     """
     cfg = parse_args()
-    setup(cfg.verbosity, cfg.log_file)
+    setup_logging(cfg.verbosity, cfg.log_file)
     if cfg.execution_mode == "Run":
         _create_compile_commands_json_with_absolute_paths(cfg)
         _run_codechecker(cfg)

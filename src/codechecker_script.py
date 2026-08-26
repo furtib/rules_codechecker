@@ -25,7 +25,7 @@ import re
 import sys
 import argparse
 from common import (
-    log_file_name,
+    setup_logging,
     fail,
     execute,
     parse,
@@ -102,26 +102,6 @@ def parse_args(argv=None):
         codechecker_env=args.env,
         codechecker_severities=args.severities,
     )
-
-
-def setup(verbosity, codechecker_log):
-    """Setup logging parameters for execution session"""
-    if verbosity == "INFO":
-        log_level = logging.INFO
-    elif verbosity == "WARN":
-        log_level = logging.WARN
-    else:
-        log_level = logging.DEBUG
-    log_format = "[codechecker] %(levelname)5s: %(message)s"
-
-    if log_file_name(codechecker_log):
-        logging.basicConfig(
-            filename=log_file_name(codechecker_log),
-            level=log_level,
-            format=log_format,
-        )
-    else:
-        logging.basicConfig(level=log_level, format=log_format)
 
 
 def input_data(cfg):
@@ -353,7 +333,7 @@ def test(cfg):
 def main():
     """Main function"""
     cfg = parse_args()
-    setup(cfg.verbosity, cfg.codechecker_log)
+    setup_logging(cfg.verbosity, cfg.codechecker_log)
     input_data(cfg)
     try:
         if cfg.execution_mode == "Run":

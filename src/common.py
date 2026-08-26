@@ -189,3 +189,23 @@ def check_results(data_dir, log, severities):
         logging.info("No defects found by CodeChecker")
     else:
         fail(log, f"CodeChecker found defects:\n{conclusion}")
+
+
+def setup_logging(verbosity, log):
+    """Setup logging parameters for execution session"""
+    if verbosity == "INFO":
+        log_level = logging.INFO
+    elif verbosity == "WARN":
+        log_level = logging.WARN
+    else:
+        log_level = logging.DEBUG
+    log_format = "[codechecker] %(levelname)5s: %(message)s"
+
+    if log_file_name(log):
+        logging.basicConfig(
+            filename=log_file_name(log),
+            level=log_level,
+            format=log_format,
+        )
+    else:
+        logging.basicConfig(level=log_level, format=log_format)
