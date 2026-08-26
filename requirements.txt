@@ -1,3 +1,0 @@
-pytest
-pylint
-codechecker >= 6.27.3
