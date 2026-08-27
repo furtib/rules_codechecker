@@ -27,6 +27,7 @@ load(
 )
 load(
     "//:defs.bzl",
+    "codechecker_store",
     "codechecker_test",
 )
 
@@ -155,4 +156,28 @@ py_test(
     main = "store_check.py",
     tags = ["unit"],
     deps = [":helpers"],
+)
+
+codechecker_store(
+    name = "store_mono",
+    targets = [
+        ":codechecker_data",
+    ],
+)
+
+codechecker_store(
+    name = "store_per_file",
+    strip_regex = [r"/\S*?/execroot/[^/]+/bazel-out/[^/]+/bin/"],
+    targets = [
+        ":per_file_data",
+        "//test/unit/virtual_include:codechecker_virtual_include",
+    ],
+)
+
+codechecker_store(
+    name = "store_mixed",
+    targets = [
+        ":codechecker_data",
+        ":per_file_data",
+    ],
 )

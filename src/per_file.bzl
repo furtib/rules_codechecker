@@ -200,6 +200,8 @@ def _per_file_impl(ctx):
     options = ctx.attr.default_options + ctx.attr.options
     config_file, env_vars = get_config_file(ctx)
     all_files = [compile_commands, config_file]
+    codechecker_files = []
+    source_files = []
 
     per_file_script = ctx.attr._per_file_script[DefaultInfo].files_to_run
 
@@ -214,6 +216,7 @@ def _per_file_impl(ctx):
         if SourceFilesInfo in target:
             if hasattr(target[SourceFilesInfo], "transitive_source_files"):
                 srcs = target[SourceFilesInfo].transitive_source_files.to_list()
+                source_files += srcs
                 all_files += srcs
                 compilation_context = target[CcInfo].compilation_context
                 for src in srcs:
@@ -236,6 +239,7 @@ def _per_file_impl(ctx):
                         sources_and_headers,
                     )
                     all_files += outputs
+                    codechecker_files += outputs
 
     # Parse action: collect all plists into a directory and run
     # CodeChecker parse to produce result.txt, result.json, HTML report
@@ -306,6 +310,10 @@ def _per_file_impl(ctx):
             files = depset(all_files),
             runfiles = all_runfiles,
             executable = launcher,
+        ),
+        OutputGroupInfo(
+            codechecker_files = codechecker_files,
+            source_files = source_files,
         ),
     ]
 

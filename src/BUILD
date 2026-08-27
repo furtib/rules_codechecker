@@ -42,6 +42,12 @@ py_binary(
     deps = [":common"],
 )
 
+py_binary(
+    name = "store_script",
+    srcs = ["store_script.py"],
+    visibility = ["//visibility:public"],
+)
+
 # The following are flags and default values for clang_tidy_aspect
 filegroup(
     name = "clang_tidy_config_default",
