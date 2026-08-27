@@ -16,7 +16,11 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 load(
     ":analysis_test.bzl",
     "compile_flags_test_suite",
+    "conlyopt_not_on_cc_file_test",
+    "conlyopt_on_c_file_test",
     "custom_ccinfo",
+    "cxxopt_not_on_c_file_test",
+    "cxxopt_on_cc_file_test",
     "defines_from_impl_deps_test",
     "includes_from_impl_deps_test",
     "local_defines_in_impl_deps_test",
@@ -219,4 +223,39 @@ compile_flags_test_suite(name = "compile_flags_tests")
 no_duplicates_test(
     name = "no_duplicates",
     target_under_test = ":compile_flags_tests_with_dep_includes",
+)
+
+# cxxopt / conlyopt filtering
+# ----------------------------
+# Verifies that --cxxopt flags only appear on C++ files and
+# --conlyopt flags only appear on C files.
+
+cc_library(
+    name = "target_with_c_and_cc",
+    srcs = [
+        "testdata/bar.c",
+        "testdata/bar.cc",
+    ],
+    hdrs = ["testdata/bar.h"],
+    tags = ["manual"],
+)
+
+cxxopt_not_on_c_file_test(
+    name = "cxxopt_not_on_c_file",
+    target_under_test = ":target_with_c_and_cc",
+)
+
+conlyopt_not_on_cc_file_test(
+    name = "conlyopt_not_on_cc_file",
+    target_under_test = ":target_with_c_and_cc",
+)
+
+cxxopt_on_cc_file_test(
+    name = "cxxopt_on_cc_file",
+    target_under_test = ":target_with_c_and_cc",
+)
+
+conlyopt_on_c_file_test(
+    name = "conlyopt_on_c_file",
+    target_under_test = ":target_with_c_and_cc",
 )
