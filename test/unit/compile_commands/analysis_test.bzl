@@ -318,11 +318,21 @@ quote_includes_from_deps_test = analysistest.make(
     extra_target_under_test_aspects = [compile_commands_aspect],
 )
 
-def _cxxopt_not_on_c_file_test_impl(ctx):
-    """cxxopt flags must NOT appear in compile commands for .c files."""
+def _cxxopt_only_on_cxx_file_test_impl(ctx):
+    """cxxopt flags must only appear in compile commands for c++ files."""
     env = analysistest.begin(ctx)
     commands = _get_compile_commands(analysistest.target_under_test(env)[SourceFilesInfo])
 
+    # On c++ files
+    cc_commands = [c for c in commands if "bar.cc" in c]
+    asserts.true(env, len(cc_commands) > 0, "Should have a command for bar.cc")
+    asserts.true(
+        env,
+        "__CXX__" in cc_commands[0],
+        "C++ file should contain cxxopt flag __CXX__, got: %s" % cc_commands[0],
+    )
+
+    # Not on .c files
     c_commands = [c for c in commands if c.endswith("/bar.c")]
     asserts.true(env, len(c_commands) > 0, "Should have a command for bar.c")
     asserts.false(
@@ -333,8 +343,8 @@ def _cxxopt_not_on_c_file_test_impl(ctx):
 
     return analysistest.end(env)
 
-cxxopt_not_on_c_file_test = analysistest.make(
-    _cxxopt_not_on_c_file_test_impl,
+cxxopt_only_on_cxx_file_test = analysistest.make(
+    _cxxopt_only_on_cxx_file_test_impl,
     extra_target_under_test_aspects = [compile_commands_aspect],
     config_settings = {
         "//command_line_option:conlyopt": ["__CONLY__"],
@@ -342,11 +352,21 @@ cxxopt_not_on_c_file_test = analysistest.make(
     },
 )
 
-def _conlyopt_not_on_cc_file_test_impl(ctx):
-    """conlyopt flags must NOT appear in compile commands for .cc files."""
+def _conlyopt_only_on_c_file_test_impl(ctx):
+    """conlyopt flags must only appear in compile commands for .c files."""
     env = analysistest.begin(ctx)
     commands = _get_compile_commands(analysistest.target_under_test(env)[SourceFilesInfo])
 
+    # On .c files
+    c_commands = [c for c in commands if c.endswith("/bar.c")]
+    asserts.true(env, len(c_commands) > 0, "Should have a command for bar.c")
+    asserts.true(
+        env,
+        "__CONLY__" in c_commands[0],
+        "C file should contain conlyopt flag __CONLY__, got: %s" % c_commands[0],
+    )
+
+    # Not on c++ files
     cc_commands = [c for c in commands if "bar.cc" in c]
     asserts.true(env, len(cc_commands) > 0, "Should have a command for bar.cc")
     asserts.false(
@@ -357,56 +377,8 @@ def _conlyopt_not_on_cc_file_test_impl(ctx):
 
     return analysistest.end(env)
 
-conlyopt_not_on_cc_file_test = analysistest.make(
-    _conlyopt_not_on_cc_file_test_impl,
-    extra_target_under_test_aspects = [compile_commands_aspect],
-    config_settings = {
-        "//command_line_option:conlyopt": ["__CONLY__"],
-        "//command_line_option:cxxopt": ["__CXX__"],
-    },
-)
-
-def _cxxopt_on_cc_file_test_impl(ctx):
-    """cxxopt flags must appear in compile commands for .cc files."""
-    env = analysistest.begin(ctx)
-    commands = _get_compile_commands(analysistest.target_under_test(env)[SourceFilesInfo])
-
-    cc_commands = [c for c in commands if "bar.cc" in c]
-    asserts.true(env, len(cc_commands) > 0, "Should have a command for bar.cc")
-    asserts.true(
-        env,
-        "__CXX__" in cc_commands[0],
-        "C++ file should contain cxxopt flag __CXX__, got: %s" % cc_commands[0],
-    )
-
-    return analysistest.end(env)
-
-cxxopt_on_cc_file_test = analysistest.make(
-    _cxxopt_on_cc_file_test_impl,
-    extra_target_under_test_aspects = [compile_commands_aspect],
-    config_settings = {
-        "//command_line_option:conlyopt": ["__CONLY__"],
-        "//command_line_option:cxxopt": ["__CXX__"],
-    },
-)
-
-def _conlyopt_on_c_file_test_impl(ctx):
-    """conlyopt flags must appear in compile commands for .c files."""
-    env = analysistest.begin(ctx)
-    commands = _get_compile_commands(analysistest.target_under_test(env)[SourceFilesInfo])
-
-    c_commands = [c for c in commands if c.endswith("/bar.c")]
-    asserts.true(env, len(c_commands) > 0, "Should have a command for bar.c")
-    asserts.true(
-        env,
-        "__CONLY__" in c_commands[0],
-        "C file should contain conlyopt flag __CONLY__, got: %s" % c_commands[0],
-    )
-
-    return analysistest.end(env)
-
-conlyopt_on_c_file_test = analysistest.make(
-    _conlyopt_on_c_file_test_impl,
+conlyopt_only_on_c_file_test = analysistest.make(
+    _conlyopt_only_on_c_file_test_impl,
     extra_target_under_test_aspects = [compile_commands_aspect],
     config_settings = {
         "//command_line_option:conlyopt": ["__CONLY__"],

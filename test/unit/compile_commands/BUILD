@@ -16,11 +16,9 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 load(
     ":analysis_test.bzl",
     "compile_flags_test_suite",
-    "conlyopt_not_on_cc_file_test",
-    "conlyopt_on_c_file_test",
+    "conlyopt_only_on_c_file_test",
     "custom_ccinfo",
-    "cxxopt_not_on_c_file_test",
-    "cxxopt_on_cc_file_test",
+    "cxxopt_only_on_cxx_file_test",
     "defines_from_impl_deps_test",
     "includes_from_impl_deps_test",
     "local_defines_in_impl_deps_test",
@@ -240,22 +238,12 @@ cc_library(
     tags = ["manual"],
 )
 
-cxxopt_not_on_c_file_test(
-    name = "cxxopt_not_on_c_file",
+cxxopt_only_on_cxx_file_test(
+    name = "cxxopt_only_on_cxx_file",
     target_under_test = ":target_with_c_and_cc",
 )
 
-conlyopt_not_on_cc_file_test(
-    name = "conlyopt_not_on_cc_file",
-    target_under_test = ":target_with_c_and_cc",
-)
-
-cxxopt_on_cc_file_test(
-    name = "cxxopt_on_cc_file",
-    target_under_test = ":target_with_c_and_cc",
-)
-
-conlyopt_on_c_file_test(
-    name = "conlyopt_on_c_file",
+conlyopt_only_on_c_file_test(
+    name = "conlyopt_only_on_c_file",
     target_under_test = ":target_with_c_and_cc",
 )
