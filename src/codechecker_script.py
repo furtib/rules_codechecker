@@ -24,7 +24,9 @@ import plistlib
 import re
 import sys
 import argparse
-from common import (
+# pylint outside bazel cannot follow the dependency graph
+# This should be removed when pylint is integrated into bazel
+from common import (  # pylint: disable=no-name-in-module
     setup_logging,
     fail,
     execute,

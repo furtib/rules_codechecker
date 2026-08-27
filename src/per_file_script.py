@@ -23,7 +23,11 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
-from common import check_results, fail, log_file_name, parse, setup_logging
+# pylint outside bazel cannot follow the dependency graph
+# This should be removed when pylint is integrated into bazel
+from common import (  # pylint: disable=no-name-in-module
+    check_results, fail, parse, setup_logging,
+)
 
 
 @dataclass
@@ -319,8 +323,15 @@ def main():
         _run_codechecker(cfg)
         _move_output_files(cfg)
     elif cfg.execution_mode == "Parse":
-        open(cfg.log_file, "a", encoding="utf-8").close()
-        parse(cfg.codechecker_bin, cfg.config_file, cfg.data_dir + "/../data", cfg.data_dir, cfg.log_file)
+        with open(cfg.log_file, "a", encoding="utf-8"):
+            pass
+        parse(
+            cfg.codechecker_bin,
+            cfg.config_file,
+            cfg.data_dir + "/../data",
+            cfg.data_dir,
+            cfg.log_file,
+        )
     elif cfg.execution_mode == "Test":
         check_results(cfg.data_dir, cfg.log_file, cfg.severities)
     else:
