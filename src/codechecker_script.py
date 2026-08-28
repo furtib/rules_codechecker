@@ -18,6 +18,7 @@ CodeChecker Bazel build & test wrapper script
 
 from __future__ import print_function
 from dataclasses import dataclass
+import json
 import logging
 import os
 import plistlib
@@ -45,6 +46,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
     codechecker_log: str
     codechecker_env: str
     codechecker_severities: str
+    expected_findings: list
 
 
 START_PATH = r"\/(?:(?!\.\s+)\S)+"
@@ -76,8 +78,26 @@ def parse_args(argv=None):
     parser.add_argument("--log", help="Log file path")
     parser.add_argument("--env", help="Environment for CodeChecker")
     parser.add_argument("--severities", help="List of severities to fail on")
+    parser.add_argument(
+        "--expected_findings",
+        default="",
+        help="Comma-separated list of expected findings "
+        "in checker:file format, e.g. "
+        "core.DivideZero:foo.cpp,core.NullDereference:bar.cpp",
+    )
 
     args = parser.parse_args(argv)
+
+    expected_findings = []
+    if args.expected_findings:
+        for entry in args.expected_findings.split(","):
+            parts = entry.strip().split(":", 1)
+            if len(parts) == 2:
+                expected_findings.append(
+                    (parts[0].strip(), parts[1].strip())
+                )
+            elif len(parts) == 1 and parts[0]:
+                expected_findings.append((parts[0].strip(), ""))
 
     return Config(
         execution_mode=args.mode,
@@ -95,6 +115,7 @@ def parse_args(argv=None):
         codechecker_log=args.log,
         codechecker_env=args.env,
         codechecker_severities=args.severities,
+        expected_findings=expected_findings,
     )
 
 
@@ -448,8 +469,99 @@ def run(cfg):
     update_file_paths(cfg.codechecker_files)
 
 
+def _match_report(report, expected_findings):
+    """Check if a report matches any expected finding.
+
+    Returns the index of the matched expected finding, or -1.
+    """
+    checker = report.get("checker_name", "")
+    file_path = report.get("file", {}).get("path", "")
+    for i, (exp_checker, exp_file) in enumerate(expected_findings):
+        checker_match = checker == exp_checker
+        file_match = not exp_file or file_path.endswith(exp_file)
+        if checker_match and file_match:
+            return i
+    return -1
+
+
+def check_expected_findings(cfg):
+    """Check results against expected findings from result.json.
+
+    Each expected finding is a (checker, file_pattern) tuple.
+    A report matches if its checker_name equals the checker and
+    its file path ends with the file_pattern.
+
+    Fails if:
+    - An expected finding has no matching report.
+    - A report does not match any expected finding.
+    Passes only when every report is accounted for and every
+    expected finding is present.
+    """
+    logging.info(
+        "Checking expected findings against %s/result.json",
+        cfg.codechecker_files,
+    )
+    data = json.loads(
+        read_file(
+            cfg.codechecker_log,
+            cfg.codechecker_files + "/result.json",
+        )
+    )
+    reports = data.get("reports", [])
+    logging.info("Found %d report(s) in result.json", len(reports))
+
+    # Track which expected findings were matched
+    matched_expected = [False] * len(cfg.expected_findings)
+    unexpected = []
+
+    for report in reports:
+        idx = _match_report(report, cfg.expected_findings)
+        if idx >= 0:
+            matched_expected[idx] = True
+        else:
+            checker = report.get("checker_name", "")
+            file_path = report.get("file", {}).get("path", "")
+            unexpected.append(
+                f"{checker} in {os.path.basename(file_path)}"
+            )
+
+    # Check for missing expected findings
+    missing = []
+    for i, (exp_checker, exp_file) in enumerate(
+        cfg.expected_findings
+    ):
+        if not matched_expected[i]:
+            label = exp_checker
+            if exp_file:
+                label += f":{exp_file}"
+            missing.append(label)
+
+    # Build conclusion
+    errors = []
+    if missing:
+        errors.append(
+            "Expected findings NOT found:\n"
+            + "".join(f"  - {m}\n" for m in missing)
+        )
+    if unexpected:
+        errors.append(
+            "Unexpected findings:\n"
+            + "".join(f"  - {u}\n" for u in unexpected)
+        )
+
+    if errors:
+        fail(cfg.codechecker_log, "\n".join(errors))
+
+    logging.info("All findings match expected_findings — PASS")
+
+
 def check_results(cfg):
     """Check/verify CodeChecker results"""
+    # If expected_findings is set, use structured JSON checking
+    if cfg.expected_findings:
+        check_expected_findings(cfg)
+        return
+
     stage("Checking result:")
     # Get results file and read it
     result_file = cfg.codechecker_files + "/result.txt"

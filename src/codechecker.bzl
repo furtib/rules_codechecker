@@ -249,17 +249,23 @@ def _codechecker_test_impl(ctx):
     )
 
     launcher = ctx.actions.declare_file(ctx.label.name + "_launcher.sh")
+    expected_findings_flag = ""
+    if ctx.attr.expected_findings:
+        expected_findings_flag = " --expected_findings '{}'".format(
+            ",".join(ctx.attr.expected_findings),
+        )
     ctx.actions.write(
         output = launcher,
         content = """#!/bin/bash
             exec {tool} --mode=Test --verbosity=INFO \
             --codechecker_path '{codechecker_path}' \
-            --files '{codechecker_files}' --severities '{severities}'
+            --files '{codechecker_files}' --severities '{severities}'{expected_findings}
             """.format(
             tool = ctx.outputs.codechecker_test_script.short_path,
             codechecker_path = info.codechecker.path,
             codechecker_files = codechecker_files.short_path,
             severities = " ".join(ctx.attr.severities),
+            expected_findings = expected_findings_flag,
         ),
         is_executable = True,
     )
@@ -292,6 +298,13 @@ _codechecker_test = rule(
             default = None,
             cfg = platforms_transition,
             doc = "CodeChecker configuration",
+        ),
+        "expected_findings": attr.string_list(
+            default = [],
+            doc = "When non-empty, the test passes when CodeChecker " +
+                  "finds defects and fails when it does not. " +
+                  "List values are reserved for future use " +
+                  "(e.g. specifying expected checkers).",
         ),
         "platform": attr.string(
             default = "",  #"@platforms//os:linux",
@@ -356,6 +369,7 @@ def codechecker_test(
         tags = [],
         per_file = False,
         toolchain = None,
+        expected_findings = [],
         **kwargs):
     """
     Macro to choose the appropriate codechecker rule
@@ -374,6 +388,9 @@ def codechecker_test(
         toolchain: Optional toolchain() target.
                   When set, tools from this target are used instead of
                   Bazel's toolchain resolution.
+        expected_findings: When non-empty, the test passes when CodeChecker
+                  finds defects and fails when it does not. List values
+                  are reserved for future use.
         **kwargs: Other miscellaneous arguments.
     Returns:
         none
@@ -389,6 +406,7 @@ def codechecker_test(
             skip = skip,
             config = config,
             toolchain = toolchain,
+            expected_findings = expected_findings,
             tags = codechecker_tags,
             **kwargs
         )
@@ -402,6 +420,7 @@ def codechecker_test(
             config = config,
             analyze = analyze,
             toolchain = toolchain,
+            expected_findings = expected_findings,
             tags = codechecker_tags,
             **kwargs
         )

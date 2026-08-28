@@ -68,3 +68,20 @@ unit_test(
     regex_patterns = ["[a-z]"],
     require_patterns_in_each_file = False,
 )
+
+codechecker_test(
+    name = "basic_expected_findings",
+    expected_findings = ["core.DivideZero:basic_test.cpp"],
+    targets = [
+        "basic_target",
+    ],
+)
+
+codechecker_test(
+    name = "basic_expected_findings_per_file",
+    expected_findings = ["core.DivideZero:basic_test.cpp"],
+    per_file = True,
+    targets = [
+        "basic_target",
+    ],
+)

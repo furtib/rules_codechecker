@@ -230,18 +230,46 @@ def _per_file_impl(ctx):
                         sources_and_headers,
                     )
                     all_files += outputs
-    ctx.actions.write(
-        output = ctx.outputs.test_script,
-        is_executable = True,
-        content = """
+
+    # Warn if expected_findings values are specified (not yet supported)
+    for val in ctx.attr.expected_findings:
+        if val:
+            # buildifier: disable=print
+            print("WARNING: expected_findings values are not yet " +
+                  "supported for per_file mode and will be ignored")
+            break
+
+    if ctx.attr.expected_findings:
+        ctx.actions.write(
+            output = ctx.outputs.test_script,
+            is_executable = True,
+            content = """
+            DATA_DIR=$(dirname {dirname})
+            echo "Running: CodeChecker parse $DATA_DIR/data"
+            $(realpath {codechecker}) parse $DATA_DIR/data
+            RC=$?
+            if [ $RC -eq 0 ]; then
+                echo "Expected CodeChecker to find defects, but none were found"
+                exit 1
+            else
+                echo "Expected failures found — PASS"
+                exit 0
+            fi
+            """.format(dirname = ctx.outputs.test_script.short_path, codechecker = info.codechecker.short_path),
+        )
+    else:
+        ctx.actions.write(
+            output = ctx.outputs.test_script,
+            is_executable = True,
+            content = """
             DATA_DIR=$(dirname {dirname})
             # ls -la $DATA_DIR/data
             # find $DATA_DIR/data -name *.plist -exec sed -i -e "s|<string>.*execroot/codechecker_bazel/|<string>|g" {{}} \\;
             # cat $DATA_DIR/data/test-src-lib.cc_clangsa.plist
             echo "Running: CodeChecker parse $DATA_DIR/data"
             $(realpath {codechecker}) parse $DATA_DIR/data
-        """.format(dirname = ctx.outputs.test_script.short_path, codechecker = info.codechecker.short_path),
-    )
+            """.format(dirname = ctx.outputs.test_script.short_path, codechecker = info.codechecker.short_path),
+        )
     files = depset(
         direct = all_files,
     )
@@ -269,6 +297,13 @@ per_file_test = rule(
                 "--clean",
             ],
             doc = "List of default CodeChecker analyze options",
+        ),
+        "expected_findings": attr.string_list(
+            default = [],
+            doc = "When non-empty, the test passes when CodeChecker " +
+                  "finds defects and fails when it does not. " +
+                  "List values are reserved for future use " +
+                  "(e.g. specifying expected checkers).",
         ),
         "options": attr.string_list(
             default = [],

@@ -129,6 +129,43 @@ The `skip` argument is supported by both the standard analysis and the
 experimental per-file analysis enabled with `per_file = True`.
 
 
+### Expected findings
+
+Use the `expected_findings` argument to mark a test that is expected to have
+specific CodeChecker findings. When `expected_findings` is non-empty, the test
+verifies that exactly those findings are present — no more, no less:
+
+```python
+codechecker_test(
+    name = "known_buggy_target_check",
+    targets = [
+        "known_buggy_target",
+    ],
+    expected_findings = ["core.DivideZero:foo.cpp"],
+)
+```
+
+Each entry uses the format `checker_name:file_pattern`, where:
+- `checker_name` is the CodeChecker checker identifier (e.g. `core.DivideZero`).
+- `file_pattern` is a suffix matched against the file path
+  (e.g. `foo.cpp` matches any path ending in `foo.cpp`).
+
+The file pattern can be omitted to match any file: `["core.DivideZero"]`.
+
+The test **fails** if:
+- An expected finding is not present in the results.
+- An unexpected finding (not listed in `expected_findings`) is present.
+
+The test **passes** only when every finding matches an expected entry and every
+expected entry has at least one matching finding.
+
+The `expected_findings` argument is supported by both the standard analysis and
+the experimental per-file analysis enabled with `per_file = True`. However,
+per-file mode does not yet evaluate the list values for structured matching
+and will emit a warning if specific values are provided; it only inverts the
+overall pass/fail behavior.
+
+
 ## codechecker_suite()
 
 _TODO: Describe this rule: see issue [#44](https://github.com/Ericsson/rules_codechecker/issues/44)._
