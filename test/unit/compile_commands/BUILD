@@ -15,10 +15,10 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load(
     ":analysis_test.bzl",
+    "c_only_has_conlyopt_flag_test",
     "compile_flags_test_suite",
-    "conlyopt_only_on_c_file_test",
     "custom_ccinfo",
-    "cxxopt_only_on_cxx_file_test",
+    "cxx_only_has_cxx_flag_test",
     "defines_from_impl_deps_test",
     "includes_from_impl_deps_test",
     "local_defines_in_impl_deps_test",
@@ -238,12 +238,12 @@ cc_library(
     tags = ["manual"],
 )
 
-cxxopt_only_on_cxx_file_test(
-    name = "cxxopt_only_on_cxx_file",
+cxx_only_has_cxx_flag_test(
+    name = "cxx_only_has_cxx_flag",
     target_under_test = ":target_with_c_and_cc",
 )
 
-conlyopt_only_on_c_file_test(
-    name = "conlyopt_only_on_c_file",
+c_only_has_conlyopt_flag_test(
+    name = "c_only_has_conlyopt_flag",
     target_under_test = ":target_with_c_and_cc",
 )
