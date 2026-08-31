@@ -17,6 +17,7 @@ load("//test/pylint:pylint_test.bzl", "pylint_test")
 exports_files([
     ".pylintrc",
     "pylint_runner.py",
+    "requirements.txt",
 ])
 
 pylint_test(
@@ -30,5 +31,6 @@ pylint_test(
         "test",
         "__init__.py",
     ],
+    pylint = "@pylint_deps//pylint",
     pylintrc = ":.pylintrc",
 )

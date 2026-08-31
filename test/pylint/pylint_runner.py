@@ -15,14 +15,19 @@
 """Runner script for the pylint Bazel test.
 
 Discovers .py files in given directories and runs pylint on them.
-Uses a workspace marker file (like MODULE.bazel) to find the repo root.
+Uses a workspace marker file (like MODULE.bazel) to find the repo
+root.
+
+Pylint is imported as a Python dependency provided by Bazel,
+not invoked from PATH.
 """
 
 import argparse
 import os
 import pathlib
-import subprocess
 import sys
+
+from pylint import lint
 
 
 def workspace_root(marker):
@@ -67,8 +72,7 @@ def main():
     parser.add_argument(
         "--rcfile",
         default=None,
-        help="Path to a .pylintrc file "
-             "(relative to workspace root).",
+        help="Path to a .pylintrc configuration file.",
     )
     parser.add_argument(
         "--exclude",
@@ -89,15 +93,15 @@ def main():
     # (which uses os.getcwd()) can resolve project imports
     os.chdir(root)
 
-    cmd = ["pylint"]
+    pylint_args = []
     if args.rcfile:
-        rcfile_path = args.rcfile
-        cmd.append(f"--rcfile={rcfile_path}")
-    cmd.extend(str(s) for s in sources)
+        rcfile_path = os.path.realpath(args.rcfile)
+        pylint_args.append(f"--rcfile={rcfile_path}")
+    pylint_args.extend(str(s) for s in sources)
 
-    print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, check=False)
-    sys.exit(result.returncode)
+    print(f"Running: pylint {' '.join(pylint_args)}")
+    result = lint.Run(pylint_args, exit=False)
+    sys.exit(result.linter.msg_status)
 
 
 if __name__ == "__main__":

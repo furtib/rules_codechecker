@@ -21,8 +21,15 @@ Usage:
 
     pylint_test(
         name = "pylint",
-        pylintrc = ".pylintrc",
-        paths = ["src", "test"],
+        exclude = [
+            "**/__pycache__/**",
+        ],
+        paths = [
+            "src",
+        ],
+        pylint = "@pylint_deps//pylint",
+        pylintrc = ":.pylintrc",
+        workspace = "//:MODULE.bazel",
     )
 """
 
@@ -30,6 +37,7 @@ load("@rules_python//python:py_test.bzl", "py_test")
 
 def pylint_test(
         name,
+        pylint,
         pylintrc,
         paths,
         workspace = "//:MODULE.bazel",
@@ -40,6 +48,7 @@ def pylint_test(
 
     Args:
         name: Test name.
+        pylint: Label of the pylint pip package.
         pylintrc: Label of the .pylintrc configuration file.
         paths: Directories or .py files to lint (relative to workspace root).
         workspace: Label of a file at the workspace root, used to locate
@@ -73,6 +82,7 @@ def pylint_test(
             pylintrc,
             workspace,
         ],
+        deps = [pylint],
         local = True,
         tags = pylint_tags,
         **kwargs
