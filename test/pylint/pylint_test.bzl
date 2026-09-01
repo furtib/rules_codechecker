@@ -41,7 +41,7 @@ def pylint_test(
         pylintrc,
         paths,
         workspace = "//:MODULE.bazel",
-        exclude = [],
+        exclude = ["**/__pycache__/**"],
         tags = [],
         **kwargs):
     """Run pylint on Python source files discovered from the given paths.

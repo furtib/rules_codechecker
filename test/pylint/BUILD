@@ -29,7 +29,6 @@ pylint_test(
     paths = [
         "src",
         "test",
-        "__init__.py",
     ],
     pylint = "@pylint_deps//pylint",
     pylintrc = ":.pylintrc",
