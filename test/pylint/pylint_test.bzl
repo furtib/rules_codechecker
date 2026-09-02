@@ -60,6 +60,11 @@ def pylint_test(
     pylint_tags = [] + tags
     if "pylint" not in tags:
         pylint_tags.append("pylint")
+
+    # The runner discovers linted sources at runtime by walking the
+    # tree from the workspace marker, so they are not in this action's
+    # input set or cache key. Without "external", Bazel serves a stale
+    # "(cached) PASSED" after a source changes; the tag forces a re-run.
     if "external" not in tags:
         pylint_tags.append("external")
 
