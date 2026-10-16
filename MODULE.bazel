@@ -24,6 +24,15 @@ bazel_dep(
     version = "1.7.1",
     dev_dependency = True,
 )
+
+# Only used by the local Buildbarn remote-execution test platform in
+# .ci/buildbarn/project-config. Kept as a dev dependency so it does not
+# propagate to consumers of rules_codechecker.
+bazel_dep(
+    name = "platforms",
+    version = "0.0.11",
+    dev_dependency = True,
+)
 bazel_dep(
     name = "buildifier_prebuilt",
     version = "7.3.1",

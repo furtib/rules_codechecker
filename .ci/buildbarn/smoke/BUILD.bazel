@@ -1,0 +1,19 @@
+# One codechecker_test wired to the in-image toolchain so CodeChecker/clang come
+# from the runner image. Running it remotely makes src/codechecker_script.py
+# print its cwd and the source tree it sees on the worker (grep REMOTE-DEBUG).
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//:defs.bzl", "codechecker_test")
+
+cc_library(
+    name = "smoke_lib",
+    srcs = ["smoke.cc"],
+    tags = ["manual"],
+)
+
+codechecker_test(
+    name = "smoke",
+    tags = ["manual"],
+    targets = [":smoke_lib"],
+    toolchain = "//.ci/buildbarn/project-config:image_toolchain",
+)

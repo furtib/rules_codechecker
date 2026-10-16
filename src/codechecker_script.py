@@ -262,10 +262,37 @@ def test(args):
     check_results(args.output, args.log, args.severities)
 
 
+def _debug_remote_location():
+    """
+    Diagnostic: print where this script runs and what the source tree looks
+    like from here. Added to inspect behaviour under remote execution; the CWD
+    on a Buildbarn worker differs from the local sandbox. Writes to stderr so it
+    shows up in the action output regardless of the logging setup.
+    """
+    import sys  # local import: diagnostic only
+    cwd = os.getcwd()
+    print(f"[REMOTE-DEBUG] codechecker_script.py cwd: {cwd}", file=sys.stderr)
+    print(f"[REMOTE-DEBUG] __file__: {os.path.abspath(__file__)}",
+          file=sys.stderr)
+    print("[REMOTE-DEBUG] source tree visible from cwd (depth<=4):",
+          file=sys.stderr)
+    for root, dirs, files in os.walk(cwd):
+        depth = root[len(cwd):].count(os.sep)
+        if depth >= 4:
+            dirs[:] = []  # do not descend further
+            continue
+        rel = os.path.relpath(root, cwd)
+        print(f"[REMOTE-DEBUG]   dir: {rel}", file=sys.stderr)
+        for name in sorted(files):
+            print(f"[REMOTE-DEBUG]     file: {os.path.join(rel, name)}",
+                  file=sys.stderr)
+
+
 def main():
     """Main function"""
     args = parse_args()
     setup_logging(args.verbosity, args.log)
+    _debug_remote_location()
     input_data(args)
     try:
         if args.mode == "Run":

@@ -20,6 +20,12 @@ venv
 .ci/micromamba/bin/
 .ci/micromamba/micromamba/
 
+# Runtime artifacts created by .ci/buildbarn/run.sh inside the vendored
+# bb-deployments compose stack. The vendored source files are committed; these
+# are regenerated on each run and must not be.
+.ci/buildbarn/bb-deployments/docker-compose/volumes/
+.ci/buildbarn/bb-deployments/docker-compose/docker-compose.override.yml
+
 # Ignore test specific bazelversion files
 test/unit/external_repository/.bazelversion
 test/unit/external_repository/third_party/my_lib/.bazelversion

@@ -1,0 +1,18 @@
+# Remote-execution config for the Buildbarn cluster started by run.sh.
+# Usage (--bazelrc goes BEFORE the command):
+#   bazel --bazelrc=.ci/buildbarn/remote-exec.bazelrc \
+#     build --config=bb //.ci/buildbarn/smoke:smoke
+
+build:bb --remote_executor=grpc://localhost:8980
+build:bb --remote_instance_name=fuse
+build:bb --remote_download_toplevel
+build:bb --extra_execution_platforms=//.ci/buildbarn/project-config:buildbarn_platform
+build:bb --jobs=50
+build:bb --dynamic_mode=off
+build:bb --incompatible_strict_action_env
+
+# Run the project's own C++ compile/link locally; only the analysis needs to run
+# remotely. The local GCC toolchain breaks on the worker (PATH=/bin -> collect2
+# cannot find 'ld'), so keep those steps local.
+build:bb --strategy=CppCompile=local
+build:bb --strategy=CppLink=local

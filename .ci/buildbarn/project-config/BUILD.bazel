@@ -1,0 +1,69 @@
+# Execution platform + in-image toolchain for running rules_codechecker against
+# the local Buildbarn cluster that .ci/buildbarn/run.sh brings up.
+#
+# This package lives under .ci/ (not shipped to consumers of the rules) and is
+# only loaded when you build with --config=bb from .ci/buildbarn/remote-exec.bazelrc.
+
+load("//src:codechecker_toolchain.bzl", "codechecker_toolchain")
+
+package(default_visibility = ["//visibility:public"])
+
+# ---------------------------------------------------------------------------
+# Execution platform
+# ---------------------------------------------------------------------------
+# exec_properties MUST match what the Buildbarn worker advertises in its runner
+# config (bb-deployments/docker-compose/config/worker-*-ubuntu22-04.jsonnet):
+#
+#   { name: 'OSFamily',        value: 'linux' }
+#   { name: 'container-image', value: 'docker://ghcr.io/catthehacker/ubuntu:act-22.04@sha256:dd7654ffb01d5b7b54b23b9ce928a1f7f2d08c7b3d7e320b6574b55d7ccde78b' }
+#
+# The container-image value is only an opaque matching key in this compose
+# deployment: the real tools come from the bb-runner-codechecker image that
+# docker-compose.override.yml swaps in. Keep the string identical so the
+# scheduler routes actions to the worker.
+platform(
+    name = "buildbarn_platform",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+    exec_properties = {
+        "OSFamily": "linux",
+        "container-image": "docker://ghcr.io/catthehacker/ubuntu:act-22.04@sha256:dd7654ffb01d5b7b54b23b9ce928a1f7f2d08c7b3d7e320b6574b55d7ccde78b",
+    },
+)
+
+# ---------------------------------------------------------------------------
+# In-image toolchain
+# ---------------------------------------------------------------------------
+# The default rules_codechecker toolchain ships the HOST tools; the host
+# CodeChecker is a venv entry-point script (host-only shebang, site-packages not
+# shipped) and cannot run on a remote worker ("codechecker_bin: not found").
+# These shims forward to the tools baked into the runner image, so remote
+# actions use the in-image tools.
+#
+# Pass this toolchain to a rule under test:
+#   codechecker_test(..., toolchain = "//.ci/buildbarn/project-config:image_toolchain")
+# (see //.ci/buildbarn/smoke for ready-made examples).
+
+sh_binary(
+    name = "codechecker_image_bin",
+    srcs = ["codechecker_shim.sh"],
+)
+
+sh_binary(
+    name = "clang_image_bin",
+    srcs = ["clang_shim.sh"],
+)
+
+sh_binary(
+    name = "clang_tidy_image_bin",
+    srcs = ["clang_tidy_shim.sh"],
+)
+
+codechecker_toolchain(
+    name = "image_toolchain",
+    clang_tidy = ":clang_tidy_image_bin",
+    clangsa = ":clang_image_bin",
+    codechecker = ":codechecker_image_bin",
+)

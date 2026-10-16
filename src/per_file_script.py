@@ -278,12 +278,39 @@ def _move_output_files(cfg: Config):
             file.write("{}")
 
 
+def _debug_remote_location():
+    """
+    Diagnostic: print where this script runs and what the source tree looks
+    like from here. Added to inspect behaviour under remote execution; the CWD
+    on a Buildbarn worker differs from the local sandbox. Writes to stderr so it
+    shows up in the action output regardless of the logging setup.
+    """
+    import sys  # local import: diagnostic only
+    cwd = os.getcwd()
+    print(f"[REMOTE-DEBUG] per_file_script.py cwd: {cwd}", file=sys.stderr)
+    print(f"[REMOTE-DEBUG] __file__: {os.path.abspath(__file__)}",
+          file=sys.stderr)
+    print("[REMOTE-DEBUG] source tree visible from cwd (depth<=4):",
+          file=sys.stderr)
+    for root, dirs, files in os.walk(cwd):
+        depth = root[len(cwd):].count(os.sep)
+        if depth >= 4:
+            dirs[:] = []  # do not descend further
+            continue
+        rel = os.path.relpath(root, cwd)
+        print(f"[REMOTE-DEBUG]   dir: {rel}", file=sys.stderr)
+        for name in sorted(files):
+            print(f"[REMOTE-DEBUG]     file: {os.path.join(rel, name)}",
+                  file=sys.stderr)
+
+
 def main():
     """
     Main function of CodeChecker wrapper
     """
     cfg = parse_args()
     setup_logging(cfg.verbosity, cfg.log_file)
+    _debug_remote_location()
     if cfg.execution_mode == "Run":
         _create_compile_commands_json_with_absolute_paths(cfg)
         _run_codechecker(cfg)

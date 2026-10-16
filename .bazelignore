@@ -1,1 +1,6 @@
 .ci/micromamba
+# The vendored bb-deployments compose stack (see .ci/buildbarn/bb-deployments)
+# is not a Bazel package; ignore it so Bazel does not try to load it. The rest
+# of .ci/buildbarn (project-config, smoke) stays loadable so the
+# remote-execution harness targets can be built.
+.ci/buildbarn/bb-deployments

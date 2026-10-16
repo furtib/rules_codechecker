@@ -1,0 +1,18 @@
+# Docker Compose override for rules_codechecker remote-execution testing.
+#
+# run.sh copies this file into the vendored compose stack at
+# bb-deployments/docker-compose/docker-compose.override.yml, where
+# `docker compose` merges it automatically on top of docker-compose.yml.
+#
+# Purpose: swap the stock runner image (which has no clang/CodeChecker) for the
+# bb-runner-codechecker:latest image built from runner-codechecker/Dockerfile.
+# The runner container is the real execution environment, so this is what gives
+# remote actions access to clang / clang-tidy / clang-extdef-mapping /
+# CodeChecker. The command/volumes/network_mode are inherited from the base
+# docker-compose.yml; we only override the image here.
+services:
+  runner-fuse-ubuntu22-04:
+    image: bb-runner-codechecker:latest
+
+  runner-hardlinking-ubuntu22-04:
+    image: bb-runner-codechecker:latest
