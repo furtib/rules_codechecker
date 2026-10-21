@@ -152,7 +152,11 @@ def parse(
     stage("CodeChecker parse:")
     env = build_env(env, log, clang, clang_tidy)
     logging.info("CodeChecker parse -e json")
-    codechecker_parse = f"{codechecker} parse --config " f"{config} {input_dir}"
+    codechecker_parse = (
+        f"{codechecker} parse --source-root={os.getcwd()} "
+        f"--trim-path-prefix={os.getcwd()} --config "
+        f"{config} {input_dir}"
+    )
     # Save results to JSON file
     command = (
         f"{codechecker_parse} --export=json > " f"{input_dir}/result.json"

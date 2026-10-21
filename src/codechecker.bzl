@@ -354,7 +354,7 @@ def codechecker_test(
     codechecker_tags = [] + tags
     if "codechecker" not in tags:
         codechecker_tags.append("codechecker")
-
+    real_analyze = analyze + ["--keep-symlink"]
     if per_file:
         if "--ctu" in analyze:
             major = int(CODECHECKER_VERSION.split(".")[0])
@@ -365,7 +365,7 @@ def codechecker_test(
             name = name,
             platform = platform,
             targets = targets,
-            options = analyze,
+            options = real_analyze,
             skip = skip,
             config = config,
             severities = severities,
@@ -381,7 +381,7 @@ def codechecker_test(
             severities = severities,
             skip = skip,
             config = config,
-            analyze = analyze,
+            analyze = real_analyze,
             toolchain = toolchain,
             tags = codechecker_tags,
             **kwargs

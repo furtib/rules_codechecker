@@ -114,6 +114,7 @@ def analyze(args):
         f"{args.compile_commands} "
         f"--output={args.output}/data "
         f"--config {args.config} "
+        f"--trim-path-prefix={os.getcwd()} "
         f"{args.analyze}"
     )
     # FIXME: Workaround "CodeChecker simply remove compiler-rt include path".
@@ -143,6 +144,9 @@ def fix_path_with_regex(data):
 
 def fix_bazel_paths(codechecker_files):
     """Remove Bazel leading paths in all files"""
+    # Disabled to test the codechecker solution for this!
+    return
+    # pylint: disable=unreachable
     stage("Fix CodeChecker output:")
     folder = codechecker_files
     logging.info("Fixing Bazel paths in %s", folder)
@@ -236,6 +240,8 @@ def update_file_paths(codechecker_files):
     Fix bazel sandbox paths and resolve symbolic links
     in generated files to real paths
     """
+    return
+    # pylint: disable=unreachable
     fix_bazel_paths(codechecker_files)
     resolve_symlinks(codechecker_files)
 
